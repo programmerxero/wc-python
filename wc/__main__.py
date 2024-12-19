@@ -4,8 +4,15 @@ from sys import argv
 
 def get_file_details(path):
     from os.path import getsize
-    details = {'bytes': getsize(path),}
+    details = {"bytes": getsize(path),}
     return details
+
+def get_stdin_details():
+    from sys import stdin
+    data = stdin.read()
+    details = {"bytes": len(data.encode("utf-8")),}
+    return details
+
 
 def report(state, details, path):
     if state & 1:
@@ -29,14 +36,23 @@ def main():
 
     # version details
     if args.version:
-        print("v0.2.0")
+        print("v0.2.5")
         print("Based on the tool written by Paul Rubin and David MacKenzie.")
         quit(0)
     
-    program_state = get_state(args)
-
+    program_state = get_state(args) # program state
+    
+    # no FILE
+    if len(args.FILE) == 0:
+        report(program_state, get_stdin_details(), "")
+        quit(0)
+    
+    # with FILE
     if len(args.FILE) > 0:
         for path in args.FILE:
+            if path == "-":
+                report(program_state, get_stdin_details(), path)
+                continue
             # check file validity
             if not exists(path):
                 print(f"{argv[0]}: {path}: No such file or directory")
@@ -44,6 +60,7 @@ def main():
             if isdir(path):
                 print(f"{argv[0]}: {path}: Is a directory")
                 continue
+ 
             report(program_state, get_file_details(path), path)
 
 if __name__ == "__main__":
