@@ -137,7 +137,7 @@ def main():
 
     # version details
     if args.version:
-        print("v0.3.0")
+        print("v1.0.0")
         print("Based on the tool written by Paul Rubin and David MacKenzie.")
         quit(0)
     # total options
