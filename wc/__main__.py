@@ -32,10 +32,18 @@ def get_file_details(path):
     details = {"bytes": getsize(path),
                "chars": 0,
                "lines": 0,
-               "max_line_length": 0,}
+               "max_line_length": 0,
+               "words": 0}
     with open(path, "r") as file:
         line_length = 0
+        is_in_word = False
         for char in file.read():
+            if char.isspace():
+                if is_in_word:
+                    details["words"] += 1
+                    is_in_word = False
+            else:
+                is_in_word = True
             details["chars"] += 1
             if char == "\n":
                 details["lines"] += 1
@@ -44,6 +52,10 @@ def get_file_details(path):
                 line_length = 0
                 continue
             line_length += 1
+        if line_length > details["max_line_length"]:
+            details["max_line_length"] = line_length
+        if is_in_word:
+            details["words"] += 1
             
     return details
 
@@ -53,9 +65,17 @@ def get_stdin_details():
     details = {"bytes": 0,
                "chars": 0,
                "lines": 0,
-               "max_line_length": 0}
+               "max_line_length": 0,
+               "words": 0}
     line_length = 0
+    is_in_word = False
     for char in data:
+        if char.isspace():
+            if is_in_word:
+                details["words"] += 1
+                is_in_word = False
+        else:
+            is_in_word = True
         details["bytes"] += len(char.encode("utf-8"))
         details["chars"] += 1
         if char == "\n":
@@ -64,6 +84,11 @@ def get_stdin_details():
                 details["max_line_length"] = line_length
             line_length = 0
             continue
+        line_length += 1
+    if line_length > details["max_line_length"]:
+        details["max_line_length"] = line_length
+    if is_in_word:
+        details["words"] += 1
     return details
 
 
@@ -71,19 +96,23 @@ def report(state, details, path, sep=" "):
     if state & 1:
         print(f"{details['lines']:3}", end=sep)
     if state & 2:
-        print(f"{details['chars']:3}", end=sep) 
+        print(f"{details['words']:3}", end=sep)
     if state & 4:
-        print(f"{details['bytes']:3}", end=sep)
+        print(f"{details['chars']:3}", end=sep) 
     if state & 8:
+        print(f"{details['bytes']:3}", end=sep)
+    if state & 16:
         print(f"{details['max_line_length']}", end=sep)
     print(path)
 
 def get_state(args):
     # 1 for lines
-    # 2 for chars
-    # 4 for bytes
-    # 8 for max line length
-    return 0 | int(args.lines) | int(args.chars) * 2 | int(args.bytes) * 4 | int(args.max_line_length) * 8
+    # 2 for words
+    # 4 for chars
+    # 8 for bytes
+    # 16 for max line length
+    explicit =  0 | int(args.lines) | int(args.words) * 2 | int(args.chars) * 4 | int(args.bytes) * 8 | int(args.max_line_length) * 16
+    return explicit if explicit > 0 else 7 # default behavior
 
 def main():
     parser = argparse.ArgumentParser(description="Print  newline,  word, and byte counts for each FILE, and a total line if more than one FILE is specified. A word is a non-zero-length sequence of printable characters delimited by white space.")
@@ -95,6 +124,7 @@ def main():
     parser.add_argument("-m", "--chars", action="store_true", help="print the character counts")
     parser.add_argument("-l", "--lines", action="store_true", help="print the newline counts")
     parser.add_argument("-L", "--max-line-length", action="store_true", help="print the maximum display width")
+    parser.add_argument("-w", "--words", action="store_true", help="print the word counts")
     parser.add_argument("--files0-from", type=str, help="read input from the files specified by NUL-terminated names in file F; If F is - then read names from standard input")
     # parse arguments
     args = parser.parse_args()
