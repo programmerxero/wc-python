@@ -4,24 +4,35 @@ from sys import argv
 
 def get_file_details(path):
     from os.path import getsize
-    details = {"bytes": getsize(path),}
+    details = {"bytes": getsize(path),
+               "chars": 0,}
+    with open(path, "r") as file:
+        for char in file.read():
+            details["chars"] += 1
     return details
 
 def get_stdin_details():
     from sys import stdin
     data = stdin.read()
-    details = {"bytes": len(data.encode("utf-8")),}
+    details = {"bytes": 0,
+               "chars": 0,}
+    for char in data:
+        details["bytes"] += len(char.encode("utf-8"))
+        details["chars"] += 1
     return details
 
 
 def report(state, details, path):
     if state & 1:
         print(f"{details['bytes']:3}", end=" ")
+    if state & 2:
+        print(f"{details['chars']:3}", end=" ")
     print(path)
 
 def get_state(args):
     # 1 for bytes
-    return 0 | int(args.bytes)
+    # 2 for chars
+    return 0 | int(args.bytes) | int(args.chars) * 2
 
 def main():
     parser = argparse.ArgumentParser(description="Print  newline,  word, and byte counts for each FILE, and a total line if more than one FILE is specified. A word is a non-zero-length sequence of printable characters delimited by white space.")
@@ -30,13 +41,13 @@ def main():
     parser.add_argument("FILE", type=str, nargs="*", help="With no FILE, or when FILE is -, read standard input.")
     parser.add_argument("-v", "--version", action="store_true", help="output version information and exit.")
     parser.add_argument("-c", "--bytes", action="store_true", help="print the byte counts")
-
+    parser.add_argument("-m", "--chars", action="store_true", help="print the character counts")
     # parse arguments
     args = parser.parse_args()
 
     # version details
     if args.version:
-        print("v0.2.5")
+        print("v0.3.0")
         print("Based on the tool written by Paul Rubin and David MacKenzie.")
         quit(0)
     
