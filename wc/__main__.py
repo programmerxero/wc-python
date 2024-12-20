@@ -2,6 +2,11 @@ import argparse
 from os.path import exists, isdir
 from sys import argv
 
+def hex_escape(s):
+    from string import ascii_letters, digits, punctuation
+    printable = ascii_letters + digits + punctuation + " "
+    return "".join([x if x in printable else r"\x{0:02x}".format(ord(x)) for x in s])
+
 def get_path_from_file(path):
     file_list = []
     if not exists(path):
@@ -9,16 +14,17 @@ def get_path_from_file(path):
     elif isdir(path):
         print(f"{argv[0]}: {path}: read error: Is a directory")
     with open(path, "r") as file:
-        for line in file:
-            start = 0
-            for i in range(len(line)):
-                if line[i] == "\0" or line[i] == "\n" or i == len(line) - 1: # null seperated values
-                    tmp = line[start:i]
-                    start = i + 1
-                    if len(tmp) > 0: # check valid length
-                        file_list.append(tmp)
-                    if line[i] == "\0":
-                        break
+        data = file.read()
+        curr_path = ""
+        for char in data:
+            if char == "\0":
+                if len(curr_path) > 0: # not empty
+                    file_list.append(curr_path)
+                curr_path = ""
+                continue
+            curr_path += char
+        if len(curr_path) > 0:
+            file_list.append(curr_path)
     return file_list
 
 def get_file_details(path):
@@ -124,10 +130,10 @@ def main():
                 continue
             # check file validity
             if not exists(path):
-                print(f"{argv[0]}: {path}: No such file or directory")
+                print(f"{argv[0]}: {hex_escape(path)}: No such file or directory")
                 continue
             if isdir(path):
-                print(f"{argv[0]}: {path}: Is a directory")
+                print(f"{argv[0]}: {hex_escape(path)}: Is a directory")
                 continue
  
             report(program_state, get_file_details(path), path)
