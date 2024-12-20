@@ -12,11 +12,13 @@ def get_path_from_file(path):
         for line in file:
             start = 0
             for i in range(len(line)):
-                if line[i] == "\0" or line[i] == "\n": # null seperated or new line seperated
+                if line[i] == "\0" or line[i] == "\n" or i == len(line) - 1: # null seperated values
                     tmp = line[start:i]
                     start = i + 1
                     if len(tmp) > 0: # check valid length
                         file_list.append(tmp)
+                    if line[i] == "\0":
+                        break
     return file_list
 
 def get_file_details(path):
